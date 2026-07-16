@@ -10,6 +10,7 @@ import CaptureInputs from "../components/CaptureInputs";
 import { MeshHalo, FloatingParticles, FocusTimer, ShortcutHint, ReadingMeta } from "../components/StudioFX";
 import CinematicHero from "../components/CinematicHero";
 import { HowStrip, RecentSessions, StatsBand, TipsCarousel } from "../components/StudioSections";
+import { SideRails } from "../components/Extras";
 
 /* ================================================================== */
 /*  Motion helpers                                                     */
@@ -269,6 +270,7 @@ export default function Home() {
     <>
       <Aurora />
       <FloatingParticles />
+      <SideRails />
       <GeneratingOverlay show={loading} action="full" />
       <FocusTimer />
       <ShortcutHint />
@@ -470,10 +472,9 @@ export default function Home() {
 
       {/* ---- Floating bottom nav ---- */}
       <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2">
-        <div className="surface flex items-center gap-3 rounded-full px-3 py-2 pl-5">
-          <span className="serif text-lg text-accent">N</span>
+        <div className="surface flex items-center rounded-full p-2">
           <button onClick={goApp} className="btn-ink rounded-full px-5 py-2 text-sm font-medium">
-            New notes
+            + New notes
           </button>
         </div>
       </div>

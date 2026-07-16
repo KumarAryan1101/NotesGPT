@@ -6,22 +6,28 @@
    - Scribble: hand-drawn SVG underline that draws itself on scroll
    - GhostWord: giant outlined word for section closers               */
 
-import { motion } from "framer-motion";
+import { useRef } from "react";
+import { motion, useInView } from "framer-motion";
 
 const EASE = [0.22, 1, 0.36, 1];
 
-/* Words rise out of a clipped mask, one after another. Wrap headings. */
+/* Words rise out of a clipped mask, one after another. Wrap headings.
+   Visibility is observed on the OUTER span: the words themselves start
+   fully clipped inside overflow-hidden masks, so per-word observers can
+   report 0% visible and never fire — which left headings showing only
+   their last unclipped word on phones. */
 export function SplitWords({ text, className = "", delay = 0, stagger = 0.055 }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, amount: 0.3 });
   const words = text.split(" ");
   return (
-    <span className={className} aria-label={text}>
+    <span ref={ref} className={className} aria-label={text}>
       {words.map((w, i) => (
         <span key={i} className="-mb-[0.12em] inline-block overflow-hidden pb-[0.12em] align-bottom">
           <motion.span
             className="inline-block will-change-transform"
             initial={{ y: "115%", rotate: 5 }}
-            whileInView={{ y: 0, rotate: 0 }}
-            viewport={{ once: true, amount: 0.6 }}
+            animate={inView ? { y: 0, rotate: 0 } : {}}
             transition={{ duration: 0.7, ease: EASE, delay: delay + i * stagger }}
           >
             {w}
@@ -37,9 +43,11 @@ export function SplitWords({ text, className = "", delay = 0, stagger = 0.055 })
    `accents` lists words (lowercase, punctuation stripped) to render in
    serif italic accent green. */
 export function BlurWords({ text, className = "", stagger = 0.045, accents = [] }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, amount: 0.3 });
   const words = text.split(" ");
   return (
-    <span className={className} aria-label={text}>
+    <span ref={ref} className={className} aria-label={text}>
       {words.map((w, i) => {
         const isAccent = accents.includes(w.toLowerCase().replace(/[^\w'-]/g, ""));
         return (
@@ -47,8 +55,7 @@ export function BlurWords({ text, className = "", stagger = 0.045, accents = [] 
             key={i}
             className={`inline-block ${isAccent ? "serif italic text-accent" : ""}`}
             initial={{ opacity: 0, y: 10, filter: "blur(8px)" }}
-            whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            viewport={{ once: true, amount: 0.5 }}
+            animate={inView ? { opacity: 1, y: 0, filter: "blur(0px)" } : {}}
             transition={{ duration: 0.55, ease: EASE, delay: i * stagger }}
           >
             {w}
@@ -80,7 +87,7 @@ export function Scribble({ children, className = "", color = "#4D6D47", delay = 
           opacity="0.5"
           initial={{ pathLength: 0 }}
           whileInView={{ pathLength: 1 }}
-          viewport={{ once: true, amount: 0.9 }}
+          viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 0.7, ease: "easeOut", delay }}
         />
       </svg>

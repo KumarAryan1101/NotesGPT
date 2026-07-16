@@ -111,12 +111,23 @@ const BREAK_MIN = 5;
 export function FocusTimer() {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState("focus"); // focus | break
+  const [mins, setMins] = useState({ focus: FOCUS_MIN, break: BREAK_MIN }); // custom-able
   const [secs, setSecs] = useState(FOCUS_MIN * 60);
   const [running, setRunning] = useState(false);
   const [rounds, setRounds] = useState(0);
   const dragRef = useRef(null);
 
-  const total = (mode === "focus" ? FOCUS_MIN : BREAK_MIN) * 60;
+  const total = mins[mode] * 60;
+
+  // Nudge the current phase length by ±5 min (1–120 clamp); resets the clock.
+  const nudge = (d) => {
+    setMins((m) => {
+      const next = Math.min(120, Math.max(1, m[mode] + d));
+      setSecs(next * 60);
+      return { ...m, [mode]: next };
+    });
+    setRunning(false);
+  };
 
   useEffect(() => {
     if (!running) return;
@@ -141,13 +152,13 @@ export function FocusTimer() {
           if (mode === "focus") setRounds((r) => r + 1);
           setMode(next);
           setRunning(false);
-          return (next === "focus" ? FOCUS_MIN : BREAK_MIN) * 60;
+          return mins[next] * 60;
         }
         return s - 1;
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [running, mode]);
+  }, [running, mode, mins]);
 
   const reset = () => {
     setRunning(false);
@@ -156,7 +167,7 @@ export function FocusTimer() {
   const switchMode = (m) => {
     setMode(m);
     setRunning(false);
-    setSecs((m === "focus" ? FOCUS_MIN : BREAK_MIN) * 60);
+    setSecs(mins[m] * 60);
   };
 
   const mm = String(Math.floor(secs / 60)).padStart(2, "0");
@@ -222,6 +233,13 @@ export function FocusTimer() {
                 <p className="font-mono text-3xl font-semibold tabular-nums">{mm}:{ss}</p>
                 <p className="mt-0.5 text-[10px] text-ink/45">{rounds} round{rounds === 1 ? "" : "s"} done</p>
               </div>
+            </div>
+
+            {/* custom duration — ±5 min for the current phase */}
+            <div className="mt-1 flex items-center justify-center gap-2">
+              <button onClick={() => nudge(-5)} aria-label="5 minutes less" className="grid h-7 w-7 place-items-center rounded-full bg-ink/5 font-mono text-xs text-ink/60 transition hover:bg-ink/10">−5</button>
+              <span className="min-w-[60px] text-center font-mono text-[11px] text-ink/45">{mins[mode]} min</span>
+              <button onClick={() => nudge(5)} aria-label="5 minutes more" className="grid h-7 w-7 place-items-center rounded-full bg-ink/5 font-mono text-xs text-ink/60 transition hover:bg-ink/10">+5</button>
             </div>
 
             <div className="mt-3 flex items-center justify-center gap-2">
