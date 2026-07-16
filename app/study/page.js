@@ -9,6 +9,7 @@ import { SplitWords } from "../components/TextFX";
 import CaptureInputs from "../components/CaptureInputs";
 import { MeshHalo, FloatingParticles, FocusTimer, ShortcutHint, ReadingMeta } from "../components/StudioFX";
 import CinematicHero from "../components/CinematicHero";
+import { HowStrip, RecentSessions, StatsBand, TipsCarousel } from "../components/StudioSections";
 
 /* ================================================================== */
 /*  Motion helpers                                                     */
@@ -459,6 +460,12 @@ export default function Home() {
             )}
           </AnimatePresence>
         </section>
+
+        {/* ============ studio content below the app ============ */}
+        <HowStrip />
+        <RecentSessions refreshKey={sessionCount} onNew={goApp} />
+        <TipsCarousel />
+        <StatsBand refreshKey={statsKey} />
       </main>
 
       {/* ---- Floating bottom nav ---- */}

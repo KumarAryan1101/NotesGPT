@@ -19,16 +19,16 @@ export default function CinematicHero({ onEnter }) {
   const videoRef = useRef(null);
   const rafRef = useRef(null);
   const fadingOutRef = useRef(false);
-  // Phones skip the video entirely: the MP4 is several MB, slow to arrive on
-  // mobile data and expensive to decode full-screen — that's the "loads late,
-  // plays janky" complaint. Desktop (md+) with normal motion prefs gets it.
+  // The video shows on ALL screens (phones included) — but it fades in only
+  // once it's actually playing, over an animated gradient, so a slow mobile
+  // connection never shows a black hole. Skipped only for reduced-motion or
+  // data-saver users.
   const [showVideo, setShowVideo] = useState(false);
 
   useEffect(() => {
-    const wide = window.matchMedia("(min-width: 768px)").matches;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const saveData = navigator.connection?.saveData === true;
-    setShowVideo(wide && !reduce && !saveData);
+    setShowVideo(!reduce && !saveData);
   }, []);
 
   // rAF fade that resumes from the current opacity; cancels any running fade.
@@ -80,13 +80,15 @@ export default function CinematicHero({ onEnter }) {
   return (
     <div className="relative flex min-h-[78svh] flex-col overflow-hidden bg-black md:min-h-screen">
       {/* ---- Background video (top cropped — content sits low in frame) ---- */}
-      {/* Static gradient backdrop — instant paint, and the mobile stand-in */}
+      {/* Animated gradient backdrop — paints instantly, breathes slowly, and
+          keeps the hero alive while the video buffers (or if it's skipped). */}
       <div
         aria-hidden
-        className="absolute inset-0"
+        className="absolute inset-0 animate-heroGlow"
         style={{
           background:
             "radial-gradient(80% 60% at 50% 110%, rgba(77,109,71,0.55), transparent 70%), radial-gradient(60% 50% at 15% 0%, rgba(163,201,146,0.18), transparent 60%), #050807",
+          backgroundSize: "160% 160%",
         }}
       />
       {showVideo && (
@@ -96,7 +98,7 @@ export default function CinematicHero({ onEnter }) {
         autoPlay
         muted
         playsInline
-        preload="metadata"
+        preload="auto"
         onPlaying={onPlaying}
         onTimeUpdate={onTimeUpdate}
         onEnded={onEnded}
