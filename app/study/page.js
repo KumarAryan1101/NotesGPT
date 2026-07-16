@@ -848,9 +848,10 @@ function Quiz({ quiz, loading, onNew, diff, setDiff, custom, setCustom }) {
     <div className="relative">
       <button
         onClick={() => setDiffOpen((o) => !o)}
-        className="btn-soft flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium capitalize"
+        disabled={loading}
+        className="btn-soft flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium capitalize disabled:opacity-60"
       >
-        🎚 {diff === "mix" ? "Mixed" : diff}
+        {loading ? <><Spinner /> loading…</> : <>🎚 {diff === "mix" ? "Mixed" : diff}</>}
         <span className={`text-xs transition-transform ${diffOpen ? "rotate-180" : ""}`}>▾</span>
       </button>
       <AnimatePresence>
@@ -865,7 +866,14 @@ function Quiz({ quiz, loading, onNew, diff, setDiff, custom, setCustom }) {
             {["mix", "easy", "medium", "hard", "custom"].map((d) => (
               <button
                 key={d}
-                onClick={() => { setDiff(d); if (d !== "custom") setDiffOpen(false); }}
+                onClick={() => {
+                  setDiff(d);
+                  if (d !== "custom") {
+                    setDiffOpen(false);
+                    // picking a difficulty fetches a fresh quiz right away
+                    if (d !== diff) onNew(d === "mix" ? "" : d);
+                  }
+                }}
                 className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm capitalize transition ${
                   diff === d ? "bg-accent/10 font-medium text-accent" : "hover:bg-ink/5"
                 }`}
@@ -884,7 +892,7 @@ function Quiz({ quiz, loading, onNew, diff, setDiff, custom, setCustom }) {
                 className="mt-1 w-full rounded-xl border border-ink/10 bg-ink/[0.03] px-3 py-2 text-sm outline-none focus:border-accent/50"
               />
             )}
-            <p className="mt-1 px-3 pb-1 font-mono text-[10px] text-ink/35">applies to “New questions”</p>
+            <p className="mt-1 px-3 pb-1 font-mono text-[10px] text-ink/35">picking one loads fresh questions</p>
           </motion.div>
         )}
       </AnimatePresence>
