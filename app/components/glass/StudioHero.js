@@ -262,14 +262,14 @@ export default function StudioHero({ onOpenApp }) {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: "easeOut", delay: 0.9 }}
-              className="rounded-full border border-black/10 bg-white/60 px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.25em] text-black/55 backdrop-blur"
+              className="hidden rounded-full border border-black/10 bg-white/60 px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.25em] text-black/55 backdrop-blur md:block"
             >
               ✦ free ai study engine · powered by groq
             </motion.p>
 
             <h1
               className="max-w-[720px] font-medium text-[#111]"
-              style={{ fontSize: "clamp(34px, 5vw, 64px)", lineHeight: 1.05, letterSpacing: "-0.03em" }}
+              style={{ fontSize: "clamp(30px, 5vw, 64px)", lineHeight: 1.05, letterSpacing: "-0.03em" }}
             >
               {"Messy lecture notes in.".split(" ").map((w, i) => (
                 <motion.span
@@ -413,7 +413,7 @@ export default function StudioHero({ onOpenApp }) {
 
       <div className="relative z-[10] mx-auto flex h-full max-w-[1600px] flex-col justify-end px-6 pb-24 md:px-10 md:pb-28">
         <div className="max-w-[820px]">
-          <p className="mb-6 font-mono text-xs uppercase tracking-[0.32em] text-accent">
+          <p className="mb-6 hidden font-mono text-xs uppercase tracking-[0.32em] text-accent md:block">
             AI study copilot · powered by Groq
           </p>
           <h1 className="font-medium text-ink" style={{ fontSize: "clamp(32px, 6.4vw, 92px)", lineHeight: 1.0, letterSpacing: "-0.03em" }}>

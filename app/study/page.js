@@ -184,13 +184,13 @@ export default function Home() {
     // here instead of a dropped request at the platform body-size limit.
     if (mode === "pdf" && file && file.size > 10 * 1024 * 1024)
       return setError("That PDF is over 10 MB. Please upload a smaller file.");
-    if (mode !== "pdf" && text.trim().length < 40)
+    if (mode !== "pdf" && text.trim().length < 3)
       return setError(
         mode === "photo"
           ? "No usable text yet — capture a clear photo of your notes first."
           : mode === "voice"
-            ? "Not enough text yet — record a bit more before generating."
-            : "Please paste at least a few sentences of notes."
+            ? "Nothing captured yet — record a few words before generating."
+            : "Type a topic or paste your notes first."
       );
 
     setLoading(true);
@@ -358,7 +358,7 @@ export default function Home() {
                     <textarea
                       value={text}
                       onChange={(e) => setText(e.target.value)}
-                      placeholder="Paste your lecture notes here…"
+                      placeholder='Paste your lecture notes — or just type a topic, e.g. "explain the OSI model"…'
                       className="h-48 w-full resize-y rounded-2xl border border-ink/10 bg-ink/[0.02] p-4 text-sm text-ink outline-none transition placeholder:text-ink/30 focus:border-accent/50 focus:bg-ink/[0.05]"
                     />
                   ) : (

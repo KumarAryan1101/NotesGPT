@@ -36,6 +36,11 @@ function getIp(req) {
 
 const RULES = `Base everything ONLY on the provided notes; do not invent facts not implied by them. Keep language student-friendly. Respond with ONE valid JSON object and nothing else — no markdown fences.`;
 
+// Short inputs ("explain the OSI model", a 10-word jotting, a sparse PDF) are a
+// topic to teach, not notes to stay grounded in — so the model is allowed to
+// use its own knowledge instead of being pinned to the (near-empty) text.
+const TOPIC_RULES = `The student gave a short topic, question, or very brief notes rather than full notes. Treat it as the subject to teach: explain it accurately from your own knowledge at an undergraduate level, covering the essentials a student needs. If it is phrased as a question, answer it thoroughly. Keep language student-friendly. Respond with ONE valid JSON object and nothing else — no markdown fences.`;
+
 // Extract text page-by-page and stop as soon as we have enough. We only ever
 // feed MAX_CHARS to the model, so pulling every page of a 700-page PDF is pure
 // waste — and on a serverless function that wasted extraction blows the timeout.
@@ -55,7 +60,7 @@ async function extractPdfText(buf, maxChars) {
 
 // ---- Prompts per action -----------------------------------------------------
 
-function fullPrompt() {
+function fullPrompt(rules) {
   return `You are NotesGPT, an expert study assistant for engineering students. Turn the notes into rich study material as a JSON object with this exact shape:
 {
   "title": "a short 3-6 word title",
@@ -65,10 +70,10 @@ function fullPrompt() {
   "flashcards": [{ "q": "question", "a": "concise answer", "detail": "1-2 sentence elaboration explaining WHY / extra context" }],  // 8 to 12 cards
   "quiz": [{ "question": "MCQ testing understanding", "options": ["A","B","C","D"], "answerIndex": 0, "explanation": "why it's correct", "difficulty": "easy|medium|hard" }]  // 6 questions
 }
-Make quiz distractors plausible but clearly wrong. ${RULES}`;
+Make quiz distractors plausible but clearly wrong. ${rules}`;
 }
 
-function quizPrompt(difficulty) {
+function quizPrompt(difficulty, rules) {
   let diffLine = "Use a mix of difficulties.";
   if (["easy", "medium", "hard"].includes(difficulty)) {
     diffLine = `ALL questions must be "${difficulty}" difficulty.`;
@@ -78,13 +83,13 @@ function quizPrompt(difficulty) {
   }
   return `You are NotesGPT. Create a FRESH set of multiple-choice quiz questions from the notes. Return JSON:
 { "quiz": [{ "question": "...", "options": ["A","B","C","D"], "answerIndex": 0, "explanation": "...", "difficulty": "easy|medium|hard" }] }
-Generate 6 questions. ${diffLine} They must be DIFFERENT from any listed as already-used, testing different sub-topics. Distractors plausible but clearly wrong. ${RULES}`;
+Generate 6 questions. ${diffLine} They must be DIFFERENT from any listed as already-used, testing different sub-topics. Distractors plausible but clearly wrong. ${rules}`;
 }
 
-function flashPrompt() {
+function flashPrompt(rules) {
   return `You are NotesGPT. Create a FRESH set of elaborated flashcards from the notes. Return JSON:
 { "flashcards": [{ "q": "question", "a": "concise answer", "detail": "1-2 sentence elaboration / why it matters" }] }
-Generate 8 cards. They must be DIFFERENT from any listed as already-used, covering different sub-topics. ${RULES}`;
+Generate 8 cards. They must be DIFFERENT from any listed as already-used, covering different sub-topics. ${rules}`;
 }
 
 // ---- Input handling ---------------------------------------------------------
@@ -171,18 +176,23 @@ export async function POST(req) {
   }
 
   const notes = (input.text || "").trim();
-  if (notes.length < 40) {
+  if (notes.length < 3) {
     return Response.json(
-      { error: "Not enough text found. Paste more notes, or upload a text-based PDF (scanned images won't work yet)." },
+      { error: "Type a topic or paste some notes first — even a few words work. (Scanned-image PDFs aren't supported yet.)" },
       { status: 400 }
     );
   }
+
+  // Under ~40 words we can't ground the output in the text anyway — treat it
+  // as a topic request and let the model teach from its own knowledge.
+  const wordCount = notes.split(/\s+/).filter(Boolean).length;
+  const rules = wordCount < 40 ? TOPIC_RULES : RULES;
 
   const truncated = notes.slice(0, MAX_CHARS);
   const action = ["full", "quiz", "flashcards"].includes(input.action) ? input.action : "full";
 
   const system =
-    action === "quiz" ? quizPrompt(input.difficulty) : action === "flashcards" ? flashPrompt() : fullPrompt();
+    action === "quiz" ? quizPrompt(input.difficulty, rules) : action === "flashcards" ? flashPrompt(rules) : fullPrompt(rules);
 
   // Variation seed + exclusions make each Retry / "load more" genuinely fresh.
   const seed = Math.floor(Math.random() * 1_000_000);
