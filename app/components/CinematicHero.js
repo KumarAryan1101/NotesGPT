@@ -8,7 +8,7 @@
    - Liquid-glass UI (`.liquid-glass` from globals.css), dark aesthetic,
      Instrument Serif display type (already loaded via next/font).       */
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Globe, AtSign, Share2 } from "lucide-react";
 
 const SERIF = { fontFamily: "var(--font-serif), 'Instrument Serif', Georgia, serif" };
@@ -19,6 +19,17 @@ export default function CinematicHero({ onEnter }) {
   const videoRef = useRef(null);
   const rafRef = useRef(null);
   const fadingOutRef = useRef(false);
+  // Phones skip the video entirely: the MP4 is several MB, slow to arrive on
+  // mobile data and expensive to decode full-screen — that's the "loads late,
+  // plays janky" complaint. Desktop (md+) with normal motion prefs gets it.
+  const [showVideo, setShowVideo] = useState(false);
+
+  useEffect(() => {
+    const wide = window.matchMedia("(min-width: 768px)").matches;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const saveData = navigator.connection?.saveData === true;
+    setShowVideo(wide && !reduce && !saveData);
+  }, []);
 
   // rAF fade that resumes from the current opacity; cancels any running fade.
   const fadeTo = (target, dur = 500) => {
@@ -69,19 +80,30 @@ export default function CinematicHero({ onEnter }) {
   return (
     <div className="relative flex min-h-[78svh] flex-col overflow-hidden bg-black md:min-h-screen">
       {/* ---- Background video (top cropped — content sits low in frame) ---- */}
+      {/* Static gradient backdrop — instant paint, and the mobile stand-in */}
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(80% 60% at 50% 110%, rgba(77,109,71,0.55), transparent 70%), radial-gradient(60% 50% at 15% 0%, rgba(163,201,146,0.18), transparent 60%), #050807",
+        }}
+      />
+      {showVideo && (
       <video
         ref={videoRef}
         src={VIDEO_SRC}
         autoPlay
         muted
         playsInline
-        preload="auto"
+        preload="metadata"
         onPlaying={onPlaying}
         onTimeUpdate={onTimeUpdate}
         onEnded={onEnded}
         style={{ opacity: 0 }}
         className="absolute inset-0 h-full w-full translate-y-[17%] object-cover"
       />
+      )}
 
       {/* ---- Nav ---- */}
       <nav className="relative z-20 py-6 pl-6 pr-6">

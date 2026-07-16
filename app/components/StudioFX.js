@@ -14,12 +14,28 @@ import { Play, Pause, RotateCcw, Timer, X, Keyboard } from "lucide-react";
 
 const EASE = [0.22, 1, 0.36, 1];
 
+// True on phones (< md) — used to disable GPU-heavy effects there.
+function useIsMobile() {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return mobile;
+}
+
 /* ------------------------------------------------------------------ */
 /*  MeshHalo — blurred, slowly morphing colour blobs + conic ring     */
 /* ------------------------------------------------------------------ */
 
 export function MeshHalo() {
   const reduce = useReducedMotion();
+  const mobile = useIsMobile();
+  // Animating huge blur-3xl layers murders mobile GPUs — static halo there.
+  const still = reduce || mobile;
   const blobs = [
     { c: "rgba(77,109,71,0.35)", x: "12%", y: "18%", s: 340, d: 0 },
     { c: "rgba(163,201,146,0.30)", x: "70%", y: "10%", s: 300, d: 1.5 },
@@ -28,7 +44,7 @@ export function MeshHalo() {
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 -z-[1] h-[520px] overflow-hidden">
       {/* slow-rotating conic ring for a subtle 3D sheen */}
-      {!reduce && (
+      {!still && (
         <motion.div
           className="absolute left-1/2 top-[-160px] h-[560px] w-[560px] -translate-x-1/2 rounded-full opacity-[0.12] blur-2xl"
           style={{
@@ -45,7 +61,7 @@ export function MeshHalo() {
           className="absolute rounded-full blur-3xl"
           style={{ background: b.c, width: b.s, height: b.s, left: b.x, top: b.y }}
           animate={
-            reduce
+            still
               ? {}
               : { x: [0, 26, -18, 0], y: [0, -22, 16, 0], scale: [1, 1.08, 0.96, 1] }
           }
@@ -60,8 +76,9 @@ export function MeshHalo() {
 
 export function FloatingParticles({ count = 14 }) {
   const reduce = useReducedMotion();
+  const mobile = useIsMobile();
   // deterministic pseudo-random so SSR + client match
-  const dots = Array.from({ length: count }, (_, i) => ({
+  const dots = Array.from({ length: mobile ? 6 : count }, (_, i) => ({
     left: (i * 61) % 100,
     top: (i * 37) % 100,
     size: 3 + ((i * 13) % 5),
