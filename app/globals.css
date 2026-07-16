@@ -132,6 +132,24 @@ body {
     animation-duration: 18s;
   }
 }
+
+/* ---- Vertical rail crawl (edge decorations) ------------------------ */
+@keyframes rail {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+.animate-rail {
+  animation: rail 40s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-rail {
+    animation: none;
+  }
+}
 .edge-fade {
   -webkit-mask-image: linear-gradient(
     to right,

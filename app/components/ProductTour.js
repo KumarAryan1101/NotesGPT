@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { SplitWords, Scribble } from "./TextFX";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -72,13 +73,15 @@ export default function ProductTour() {
 
   return (
     <section ref={scope} className="relative mt-28 md:mt-40" aria-label="Product tour">
-      <div ref={pinRef} className="flex min-h-screen flex-col justify-center bg-paper py-10">
+      <div ref={pinRef} className="flex min-h-[80svh] flex-col justify-center bg-paper py-10 md:min-h-screen">
         <div className="mx-auto grid w-full max-w-6xl gap-10 px-1 md:grid-cols-[0.9fr_1.1fr] md:items-center">
           {/* left — steps */}
           <div>
             <p className="font-mono text-xs uppercase tracking-[0.3em] text-ink/40">the output</p>
             <h2 className="mt-3 text-4xl font-semibold leading-[1.05] tracking-tight md:text-5xl">
-              One upload, <span className="serif text-accent">three ways</span> to revise.
+              <SplitWords text="One upload," />{" "}
+              <Scribble><span className="serif text-accent">three ways</span></Scribble>{" "}
+              <SplitWords text="to revise." delay={0.2} />
             </h2>
             <div className="mt-8 space-y-4">
               {STEPS.map((s, i) => (

@@ -68,10 +68,17 @@ function fullPrompt() {
 Make quiz distractors plausible but clearly wrong. ${RULES}`;
 }
 
-function quizPrompt() {
+function quizPrompt(difficulty) {
+  let diffLine = "Use a mix of difficulties.";
+  if (["easy", "medium", "hard"].includes(difficulty)) {
+    diffLine = `ALL questions must be "${difficulty}" difficulty.`;
+  } else if (difficulty) {
+    // Free-text "custom" mode — the student describes what they want.
+    diffLine = `The student asked for this style of questions: "${difficulty.slice(0, 200)}". Follow it while staying faithful to the notes.`;
+  }
   return `You are NotesGPT. Create a FRESH set of multiple-choice quiz questions from the notes. Return JSON:
 { "quiz": [{ "question": "...", "options": ["A","B","C","D"], "answerIndex": 0, "explanation": "...", "difficulty": "easy|medium|hard" }] }
-Generate 6 questions. They must be DIFFERENT from any listed as already-used, testing different sub-topics and a mix of difficulties. Distractors plausible but clearly wrong. ${RULES}`;
+Generate 6 questions. ${diffLine} They must be DIFFERENT from any listed as already-used, testing different sub-topics. Distractors plausible but clearly wrong. ${RULES}`;
 }
 
 function flashPrompt() {
@@ -96,6 +103,7 @@ async function readInput(req) {
       text,
       action: body.action || "full",
       exclude: Array.isArray(body.exclude) ? body.exclude.slice(0, 40) : [],
+      difficulty: typeof body.difficulty === "string" ? body.difficulty.slice(0, 200) : "",
     };
   }
 
@@ -174,7 +182,7 @@ export async function POST(req) {
   const action = ["full", "quiz", "flashcards"].includes(input.action) ? input.action : "full";
 
   const system =
-    action === "quiz" ? quizPrompt() : action === "flashcards" ? flashPrompt() : fullPrompt();
+    action === "quiz" ? quizPrompt(input.difficulty) : action === "flashcards" ? flashPrompt() : fullPrompt();
 
   // Variation seed + exclusions make each Retry / "load more" genuinely fresh.
   const seed = Math.floor(Math.random() * 1_000_000);

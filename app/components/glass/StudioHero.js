@@ -183,7 +183,7 @@ export default function StudioHero({ onOpenApp }) {
   // ---- Portrait variant: dim base photo + bright photo revealed by lens ----
   if (isPortrait) {
     return (
-      <section className="relative h-screen min-h-[720px] w-full overflow-hidden bg-[#E4E4E4] text-[#111]">
+      <section className="relative h-[74svh] min-h-[480px] w-full overflow-hidden bg-[#E4E4E4] text-[#111] md:h-screen md:min-h-[720px]">
         <AnimatePresence>{splash && <Splash onDone={() => setSplash(false)} />}</AnimatePresence>
 
         {/* Giant ghost word behind the image */}
@@ -195,7 +195,7 @@ export default function StudioHero({ onOpenApp }) {
         >
           <h2
             className="select-none font-medium text-[#F4F1E8]"
-            style={{ fontSize: "clamp(180px, 28vw, 560px)", lineHeight: 0.8, letterSpacing: "-0.04em", whiteSpace: "nowrap" }}
+            style={{ fontSize: "clamp(88px, 28vw, 560px)", lineHeight: 0.8, letterSpacing: "-0.04em", whiteSpace: "nowrap" }}
           >
             Focus
           </h2>
@@ -244,7 +244,7 @@ export default function StudioHero({ onOpenApp }) {
           <button
             onClick={() => setMenu((m) => !m)}
             aria-label={menu ? "Close menu" : "Open menu"}
-            className={`flex h-14 w-14 items-center justify-center rounded-full transition-colors ${
+            className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors md:h-14 md:w-14 ${
               menu ? "bg-[#0B0B0B] text-white" : "bg-[#F4F1E8] text-[#111] hover:bg-[#0B0B0B] hover:text-white"
             }`}
           >
@@ -257,28 +257,75 @@ export default function StudioHero({ onOpenApp }) {
         {/* Content — headline + CTA, bottom-left */}
         <div className="pointer-events-none absolute inset-0 z-[10] mx-auto flex max-w-[1600px] flex-col justify-end px-4 pb-8 md:justify-between md:px-10 md:pb-24 md:pt-40">
           <div />
-          <div className="pointer-events-auto flex flex-col items-start gap-7">
-            <h1
-              className="max-w-[447px] font-medium text-[#111]"
-              style={{ fontSize: "clamp(22px, 2.4vw, 28px)", lineHeight: 1.2, letterSpacing: "-0.02em" }}
+          <div className="pointer-events-auto flex flex-col items-start gap-6">
+            <motion.p
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.9 }}
+              className="rounded-full border border-black/10 bg-white/60 px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.25em] text-black/55 backdrop-blur"
             >
-              {"Upload your notes and watch them come into focus — summary, cards & quiz.".split(" ").map((w, i) => (
+              ✦ free ai study engine · powered by groq
+            </motion.p>
+
+            <h1
+              className="max-w-[720px] font-medium text-[#111]"
+              style={{ fontSize: "clamp(34px, 5vw, 64px)", lineHeight: 1.05, letterSpacing: "-0.03em" }}
+            >
+              {"Messy lecture notes in.".split(" ").map((w, i) => (
                 <motion.span
                   key={i}
-                  initial={{ opacity: 0, y: 10, filter: "blur(10px)" }}
+                  initial={{ opacity: 0, y: 14, filter: "blur(10px)" }}
                   animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                  transition={{ duration: 0.4, ease: "easeOut", delay: 1 + i * 0.05 }}
-                  className="mr-[0.3em] inline-block"
+                  transition={{ duration: 0.45, ease: "easeOut", delay: 1 + i * 0.07 }}
+                  className="mr-[0.28em] inline-block"
                 >
                   {w}
                 </motion.span>
               ))}
+              <br />
+              {"Summary, flashcards &".split(" ").map((w, i) => (
+                <motion.span
+                  key={`b${i}`}
+                  initial={{ opacity: 0, y: 14, filter: "blur(10px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  transition={{ duration: 0.45, ease: "easeOut", delay: 1.35 + i * 0.07 }}
+                  className="mr-[0.28em] inline-block"
+                >
+                  {w}
+                </motion.span>
+              ))}
+              <motion.span
+                initial={{ opacity: 0, y: 14, filter: "blur(10px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                transition={{ duration: 0.45, ease: "easeOut", delay: 1.6 }}
+                className="serif inline-block italic text-accent"
+              >
+                quizzes
+              </motion.span>{" "}
+              <motion.span
+                initial={{ opacity: 0, y: 14, filter: "blur(10px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                transition={{ duration: 0.45, ease: "easeOut", delay: 1.7 }}
+                className="inline-block"
+              >
+                out.
+              </motion.span>
             </h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 1.9 }}
+              className="max-w-[440px] text-[15px] leading-relaxed text-black/55 md:text-base"
+            >
+              Upload a PDF or paste your notes — NotesGPT turns them into a full
+              revision kit in about ten seconds. No account, no cost.
+            </motion.p>
 
             <motion.button
               initial={{ opacity: 0, y: 60, scale: 0.4 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94], delay: 1 }}
+              transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94], delay: 1.2 }}
               onClick={onOpenApp}
               className="group flex items-center gap-3 rounded-full bg-black/5 p-2"
             >
@@ -310,13 +357,13 @@ export default function StudioHero({ onOpenApp }) {
   // ---- Formula variant (NotesGPT-branded) ----------------------------------
   const headWords = "Turn dense notes into knowledge that sticks.".split(" ");
   return (
-    <section className="relative h-screen min-h-[720px] w-full overflow-hidden bg-paper text-ink">
+    <section className="relative h-[74svh] min-h-[480px] w-full overflow-hidden bg-paper text-ink md:h-screen md:min-h-[720px]">
       <AnimatePresence>{splash && <Splash onDone={() => setSplash(false)} />}</AnimatePresence>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-[-3vw] z-[1] text-center">
         <span
           className="select-none font-medium text-ink/[0.05]"
-          style={{ fontSize: "clamp(140px, 30vw, 560px)", lineHeight: 0.8, letterSpacing: "-0.04em" }}
+          style={{ fontSize: "clamp(80px, 30vw, 560px)", lineHeight: 0.8, letterSpacing: "-0.04em" }}
         >
           notes
         </span>
@@ -354,7 +401,7 @@ export default function StudioHero({ onOpenApp }) {
         <button
           onClick={() => setMenu((m) => !m)}
           aria-label={menu ? "Close menu" : "Open menu"}
-          className={`flex h-14 w-14 items-center justify-center rounded-full transition-colors ${
+          className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors md:h-14 md:w-14 ${
             menu ? "bg-[#122014] text-paper" : "bg-ink text-paper hover:opacity-90"
           }`}
         >
@@ -369,7 +416,7 @@ export default function StudioHero({ onOpenApp }) {
           <p className="mb-6 font-mono text-xs uppercase tracking-[0.32em] text-accent">
             AI study copilot · powered by Groq
           </p>
-          <h1 className="font-medium text-ink" style={{ fontSize: "clamp(38px, 6.4vw, 92px)", lineHeight: 1.0, letterSpacing: "-0.03em" }}>
+          <h1 className="font-medium text-ink" style={{ fontSize: "clamp(32px, 6.4vw, 92px)", lineHeight: 1.0, letterSpacing: "-0.03em" }}>
             {headWords.map((w, i) => (
               <motion.span
                 key={i}

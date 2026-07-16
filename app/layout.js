@@ -28,6 +28,13 @@ const readex = Readex_Pro({
   display: "swap",
 });
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
+};
+
 export const metadata = {
   title: "NotesGPT — Turn notes into knowledge",
   description:
