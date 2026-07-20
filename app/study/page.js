@@ -138,6 +138,10 @@ export default function Home() {
   const [cardsLoading, setCardsLoading] = useState(false);
   const [banner, setBanner] = useState("");
 
+  const [askInput, setAskInput] = useState("");
+  const [askLoading, setAskLoading] = useState(false);
+  const [askMessages, setAskMessages] = useState([]);
+
   const fileRef = useRef(null);
   const appRef = useRef(null);
   const resultRef = useRef(null);
@@ -158,6 +162,7 @@ export default function Home() {
       if (e.key === "1") setTab("summary");
       else if (e.key === "2") setTab("cards");
       else if (e.key === "3") setTab("quiz");
+      else if (e.key === "4") setTab("ask");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -179,6 +184,8 @@ export default function Home() {
     setError("");
     setBanner("");
     setResult(null);
+    setAskMessages([]);
+    setAskInput("");
     if (mode === "pdf" && !file) return setError("Please choose a PDF first.");
     // Match the server's 10 MB cap so oversized files get a friendly message
     // here instead of a dropped request at the platform body-size limit.
@@ -261,6 +268,34 @@ export default function Home() {
       setBanner(e.message);
     } finally {
       setCardsLoading(false);
+    }
+  }
+
+  async function askQuestion() {
+    const question = askInput.trim();
+    if (!question || !result?.sourceText || askLoading) return;
+    setBanner("");
+    // Optimistically show the user's turn and clear the input.
+    const history = askMessages.slice(-6).map((m) => ({ role: m.role, content: m.content }));
+    setAskMessages((m) => [...m, { role: "user", content: question }]);
+    setAskInput("");
+    setAskLoading(true);
+    try {
+      const data = await callApi({
+        text: result.sourceText,
+        action: "ask",
+        question,
+        history,
+      });
+      setAskMessages((m) => [
+        ...m,
+        { role: "assistant", content: data.answer, usedNotes: data.usedNotes, declined: data.declined },
+      ]);
+      setStatsKey((k) => k + 1);
+    } catch (e) {
+      setBanner(e.message);
+    } finally {
+      setAskLoading(false);
     }
   }
 
@@ -426,6 +461,7 @@ export default function Home() {
                   <Pill active={tab === "summary"} onClick={() => setTab("summary")}>📝 Summary</Pill>
                   <Pill active={tab === "cards"} onClick={() => setTab("cards")}>🎴 Flashcards ({result.flashcards.length})</Pill>
                   <Pill active={tab === "quiz"} onClick={() => setTab("quiz")}>🧠 Quiz ({result.quiz.length})</Pill>
+                  <Pill active={tab === "ask"} onClick={() => setTab("ask")}>💬 Ask</Pill>
                 </div>
 
                 {banner && (
@@ -454,6 +490,15 @@ export default function Home() {
                         setDiff={setQuizDiff}
                         custom={quizCustom}
                         setCustom={setQuizCustom}
+                      />
+                    )}
+                    {tab === "ask" && (
+                      <AskPanel
+                        messages={askMessages}
+                        input={askInput}
+                        setInput={setAskInput}
+                        loading={askLoading}
+                        onAsk={askQuestion}
                       />
                     )}
                   </motion.div>
@@ -1130,6 +1175,124 @@ function ExportButtons({ result }) {
 
 function Empty({ label }) {
   return <div className="surface rounded-[28px] p-8 text-center text-ink/50">{label}</div>;
+}
+
+function AskPanel({ messages, input, setInput, loading, onAsk }) {
+  const scrollRef = useRef(null);
+  const starters = [
+    "Explain the main idea in simpler terms",
+    "Give me a real-world example",
+    "What's most likely to be on an exam?",
+  ];
+
+  // Keep the newest message in view as the conversation grows.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages.length, loading]);
+
+  const submit = (e) => {
+    e?.preventDefault();
+    onAsk();
+  };
+
+  return (
+    <div className="surface flex flex-col rounded-[28px] p-5 md:p-6">
+      <div className="mb-3 flex items-center gap-3">
+        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-indigo-600">ask</span>
+        <span className="h-px flex-1 bg-ink/10" />
+        <span className="font-mono text-[10px] text-ink/35">grounded in your notes</span>
+      </div>
+
+      <div ref={scrollRef} className="thin max-h-[420px] min-h-[120px] space-y-3 overflow-y-auto pr-1">
+        {messages.length === 0 && !loading && (
+          <div className="py-6 text-center">
+            <p className="text-sm text-ink/50">Ask a follow-up about your notes.</p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              {starters.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setInput(s)}
+                  className="rounded-full bg-ink/5 px-3 py-1.5 text-xs text-ink/60 transition hover:bg-ink/10 hover:text-ink"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {messages.map((m, i) => (
+          <AskBubble key={i} msg={m} />
+        ))}
+
+        {loading && (
+          <div className="flex justify-start">
+            <div className="rounded-2xl rounded-bl-md bg-ink/5 px-4 py-2.5 text-sm text-ink/50">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-ink/40 [animation-delay:-0.2s]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-ink/40 [animation-delay:-0.1s]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-ink/40" />
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <form onSubmit={submit} className="mt-4 flex items-end gap-2">
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              submit();
+            }
+          }}
+          rows={1}
+          placeholder="Ask a question about your notes…"
+          className="thin max-h-32 min-h-[46px] flex-1 resize-y rounded-2xl border border-ink/10 bg-ink/[0.02] px-4 py-3 text-sm text-ink outline-none transition placeholder:text-ink/30 focus:border-accent/50 focus:bg-ink/[0.05]"
+        />
+        <button
+          type="submit"
+          disabled={loading || !input.trim()}
+          className="btn-ink grid h-[46px] w-[46px] shrink-0 place-items-center rounded-2xl text-lg disabled:cursor-not-allowed disabled:opacity-50"
+          aria-label="Send question"
+        >
+          {loading ? <Spinner /> : "↑"}
+        </button>
+      </form>
+      <p className="mt-2 font-mono text-[10px] text-ink/35">Enter to send · Shift+Enter for a new line</p>
+    </div>
+  );
+}
+
+function AskBubble({ msg }) {
+  const isUser = msg.role === "user";
+  if (isUser) {
+    return (
+      <div className="flex justify-end">
+        <div className="max-w-[85%] whitespace-pre-line rounded-2xl rounded-br-md bg-ink px-4 py-2.5 text-sm text-paper">
+          {msg.content}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex justify-start">
+      <div
+        className={`max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5 text-sm ${
+          msg.declined ? "bg-amber-500/10 text-amber-800" : "bg-ink/5 text-ink/80"
+        }`}
+      >
+        <p className="whitespace-pre-line leading-relaxed">{msg.content}</p>
+        {!msg.declined && msg.usedNotes === false && (
+          <p className="mt-2 inline-block rounded-full bg-indigo-500/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-indigo-600">
+            beyond your notes
+          </p>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function Skeleton() {
