@@ -61,16 +61,16 @@ async function extractPdfText(buf, maxChars) {
 // ---- Prompts per action -----------------------------------------------------
 
 function fullPrompt(rules) {
-  return `You are NotesGPT, an expert study assistant for engineering students. Turn the notes into rich study material as a JSON object with this exact shape:
+  return `You are NotesGPT, an expert study assistant for engineering students. Turn the notes into rich, exam-ready study material as a JSON object with this exact shape:
 {
   "title": "a short 3-6 word title",
-  "summary": "a detailed, well-structured 8-12 sentence summary that actually teaches the topic",
-  "keyPoints": ["6 to 8 important bullet points"],
-  "glossary": [{ "term": "important term", "definition": "one-line plain-English meaning" }],   // 5 to 8 terms
-  "flashcards": [{ "q": "question", "a": "concise answer", "detail": "1-2 sentence elaboration explaining WHY / extra context" }],  // 8 to 12 cards
-  "quiz": [{ "question": "MCQ testing understanding", "options": ["A","B","C","D"], "answerIndex": 0, "explanation": "why it's correct", "difficulty": "easy|medium|hard" }]  // 6 questions
+  "summary": "a thorough, well-structured 12-18 sentence summary written as 2-4 short paragraphs that genuinely TEACHES the topic: open with what it is and why it matters, then explain the core concepts, how they relate, and a concrete real-life example or use-case, and close with the key takeaway. Do not just list facts — connect them so a student who missed the class could learn from this alone.",
+  "keyPoints": ["7 to 10 specific, self-contained bullet points — each a complete idea, not a bare keyword"],
+  "glossary": [{ "term": "important term", "definition": "a clear 1-2 sentence plain-English definition; include a short example or contrast where it helps understanding" }],   // 8 to 12 terms, covering every notable concept, acronym, or tool mentioned
+  "flashcards": [{ "q": "a specific, precise question targeting ONE concept (avoid vague 'what is X' when a sharper angle exists — ask about differences, purpose, when-to-use, or a concrete example)", "a": "a concise, direct answer", "detail": "1-2 sentence elaboration explaining WHY it matters, a common misconception, or extra context" }],  // 10 to 12 cards, each on a different sub-topic
+  "quiz": [{ "question": "a specific MCQ that tests real understanding or application, not just recall of a definition", "options": ["A","B","C","D"], "answerIndex": 0, "explanation": "why the correct option is right AND why the others are wrong", "difficulty": "easy|medium|hard" }]  // 8 questions with a spread of difficulties
 }
-Make quiz distractors plausible but clearly wrong. ${rules}`;
+Every flashcard and quiz question must be answerable from the notes and tied to a distinct sub-topic — no duplicates, no filler. Make quiz distractors plausible but clearly wrong to someone who understood the material. ${rules}`;
 }
 
 function quizPrompt(difficulty, rules) {
@@ -82,14 +82,14 @@ function quizPrompt(difficulty, rules) {
     diffLine = `The student asked for this style of questions: "${difficulty.slice(0, 200)}". Follow it while staying faithful to the notes.`;
   }
   return `You are NotesGPT. Create a FRESH set of multiple-choice quiz questions from the notes. Return JSON:
-{ "quiz": [{ "question": "...", "options": ["A","B","C","D"], "answerIndex": 0, "explanation": "...", "difficulty": "easy|medium|hard" }] }
-Generate 6 questions. ${diffLine} They must be DIFFERENT from any listed as already-used, testing different sub-topics. Distractors plausible but clearly wrong. ${rules}`;
+{ "quiz": [{ "question": "...", "options": ["A","B","C","D"], "answerIndex": 0, "explanation": "why the correct option is right AND why the others are wrong", "difficulty": "easy|medium|hard" }] }
+Generate 6 questions. ${diffLine} Each must be SPECIFIC — test understanding or application (differences, purpose, when-to-use, a worked example), not bare definition recall. They must be DIFFERENT from any listed as already-used, each on a distinct sub-topic. Distractors plausible but clearly wrong to someone who understood the material. ${rules}`;
 }
 
 function flashPrompt(rules) {
   return `You are NotesGPT. Create a FRESH set of elaborated flashcards from the notes. Return JSON:
-{ "flashcards": [{ "q": "question", "a": "concise answer", "detail": "1-2 sentence elaboration / why it matters" }] }
-Generate 8 cards. They must be DIFFERENT from any listed as already-used, covering different sub-topics. ${rules}`;
+{ "flashcards": [{ "q": "a specific, precise question targeting ONE concept (prefer differences, purpose, when-to-use, or a concrete example over vague 'what is X')", "a": "concise, direct answer", "detail": "1-2 sentence elaboration on WHY it matters, a common misconception, or extra context" }] }
+Generate 8 cards. They must be DIFFERENT from any listed as already-used, each on a distinct sub-topic. ${rules}`;
 }
 
 // Follow-up "cross questions" the student asks after seeing the study material.
