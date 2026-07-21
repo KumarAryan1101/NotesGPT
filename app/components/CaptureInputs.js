@@ -8,7 +8,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, RefreshCw, Check, X, Mic, Square, Upload } from "lucide-react";
+import { Camera, RefreshCw, Check, X, Mic, Square, Upload, Youtube } from "lucide-react";
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -336,10 +336,123 @@ function VoiceCapture({ text, setText }) {
   );
 }
 
-export default function CaptureInputs({ mode, text, setText }) {
-  return mode === "photo" ? (
-    <PhotoCapture text={text} setText={setText} />
-  ) : (
-    <VoiceCapture text={text} setText={setText} />
+/* ---- YouTube --------------------------------------------------------- */
+
+function YouTubeCapture({ text, setText }) {
+  const [url, setUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [info, setInfo] = useState(null); // { title, words } after a successful fetch
+
+  async function fetchTranscript() {
+    const link = url.trim();
+    if (!link || busy) return;
+    setBusy(true);
+    setErr("");
+    setInfo(null);
+    try {
+      const res = await fetch("/api/youtube", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: link }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not fetch the transcript.");
+      const t = (data.text || "").trim();
+      if (!t) throw new Error("No transcript text was found for that video.");
+      setText((prev) => (prev.trim() ? prev.trimEnd() + "\n\n" + t : t));
+      setInfo({ title: data.title || "Video transcript", words: t.split(/\s+/).length });
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-2xl border-2 border-dashed border-ink/15 bg-ink/[0.02] p-6 text-center">
+        <div className="text-4xl">▶️</div>
+        <p className="mt-3 font-medium">Summarise a YouTube video</p>
+        <p className="mx-auto mt-1 max-w-xs text-xs text-ink/40">
+          Paste a link to a lecture, tutorial or explainer. We pull its captions,
+          then turn them into notes, flashcards and a quiz.
+        </p>
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); fetchTranscript(); } }}
+            placeholder="https://www.youtube.com/watch?v=…"
+            className="flex-1 rounded-2xl border border-ink/10 bg-paper px-4 py-3 text-sm text-ink outline-none transition placeholder:text-ink/30 focus:border-accent/50"
+          />
+          <button
+            onClick={fetchTranscript}
+            disabled={busy || !url.trim()}
+            className="btn-ink flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {busy ? (
+              <>
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-paper/30 border-t-paper" />
+                Fetching…
+              </>
+            ) : (
+              <>
+                <Youtube className="h-4 w-4" /> Fetch transcript
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {info && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, ease: EASE }}
+            className="flex items-start gap-3 rounded-2xl border border-emerald-500/25 bg-emerald-500/8 px-4 py-3 text-sm text-emerald-700"
+          >
+            <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-500/15">
+              <Check className="h-3 w-3" />
+            </span>
+            <span>
+              <span className="font-semibold">Transcript added</span>
+              <span className="block opacity-80">
+                {info.title} · {info.words} words — edit below, then Generate.
+              </span>
+            </span>
+          </motion.div>
+        )}
+        {err && (
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-600">
+            {err}
+          </motion.p>
+        )}
+      </AnimatePresence>
+
+      {text.trim() && (
+        <div className="rounded-2xl border border-ink/10 bg-ink/[0.02] p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/40">
+              transcript · editable
+            </p>
+            <span className="font-mono text-[10px] text-ink/35">{text.trim().split(/\s+/).length} words</span>
+          </div>
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            className="h-32 w-full resize-y bg-transparent text-sm text-ink outline-none"
+          />
+        </div>
+      )}
+    </div>
   );
+}
+
+export default function CaptureInputs({ mode, text, setText }) {
+  if (mode === "photo") return <PhotoCapture text={text} setText={setText} />;
+  if (mode === "youtube") return <YouTubeCapture text={text} setText={setText} />;
+  return <VoiceCapture text={text} setText={setText} />;
 }

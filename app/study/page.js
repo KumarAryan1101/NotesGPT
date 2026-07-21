@@ -197,7 +197,9 @@ export default function Home() {
           ? "No usable text yet — capture a clear photo of your notes first."
           : mode === "voice"
             ? "Nothing captured yet — record a few words before generating."
-            : "Type a topic or paste your notes first."
+            : mode === "youtube"
+              ? "Fetch a video transcript first — paste a YouTube link above."
+              : "Type a topic or paste your notes first."
       );
 
     setLoading(true);
@@ -362,6 +364,7 @@ export default function Home() {
                 <SegBtn active={mode === "text"} onClick={() => setMode("text")}>✍️ Text</SegBtn>
                 <SegBtn active={mode === "photo"} onClick={() => setMode("photo")}>📸 Photo</SegBtn>
                 <SegBtn active={mode === "voice"} onClick={() => setMode("voice")}>🎙 Voice</SegBtn>
+                <SegBtn active={mode === "youtube"} onClick={() => setMode("youtube")}>▶️ YouTube</SegBtn>
               </div>
 
               <AnimatePresence mode="wait">
