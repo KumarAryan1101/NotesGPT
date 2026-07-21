@@ -23,16 +23,59 @@ function extractVideoId(input) {
   return m ? m[1] : null;
 }
 
-function joinCues(subtitles) {
-  if (!Array.isArray(subtitles)) return "";
-  return subtitles
-    .map((c) => (c && typeof c.text === "string" ? c.text : ""))
-    .join(" ")
+function cleanText(s) {
+  return String(s || "")
     .replace(/&amp;#39;/g, "'")
     .replace(/&#39;/g, "'")
+    .replace(/&amp;quot;/g, '"')
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;#([0-9]+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&#([0-9]+);/g, (_, n) => String.fromCharCode(Number(n)))
     .replace(/&amp;/g, "&")
+    .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function joinCues(subtitles) {
+  if (!Array.isArray(subtitles)) return "";
+  return cleanText(
+    subtitles.map((c) => (c && typeof c.text === "string" ? c.text : "")).join(" ")
+  );
+}
+
+// Direct fallback: scrape the watch page for its caption tracks, then fetch the
+// timedtext track ourselves. Catches auto-generated / non-English captions that
+// the library sometimes misses. Best-effort — returns "" on any failure.
+async function fetchCaptionsDirect(videoID) {
+  try {
+    const watch = await fetch(`https://www.youtube.com/watch?v=${videoID}&hl=en`, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+    });
+    if (!watch.ok) return "";
+    const html = await watch.text();
+    const m = html.match(/"captionTracks":(\[.*?\])/);
+    if (!m) return "";
+    const tracks = JSON.parse(m[1].replace(/\\u0026/g, "&"));
+    if (!Array.isArray(tracks) || !tracks.length) return "";
+    // Prefer a manual/auto English track, else take whatever exists.
+    const pick =
+      tracks.find((t) => (t.languageCode || "").startsWith("en")) || tracks[0];
+    if (!pick?.baseUrl) return "";
+    const capRes = await fetch(pick.baseUrl, {
+      headers: { "Accept-Language": "en-US,en;q=0.9" },
+    });
+    if (!capRes.ok) return "";
+    const xml = await capRes.text();
+    const cues = [...xml.matchAll(/<text[^>]*>([\s\S]*?)<\/text>/g)].map((x) => x[1]);
+    return cleanText(cues.join(" "));
+  } catch {
+    return "";
+  }
 }
 
 export async function POST(req) {
@@ -78,6 +121,11 @@ export async function POST(req) {
         text = joinCues(await getSubtitles({ videoID }));
       } catch {}
     }
+    // Third attempt: scrape YouTube directly for auto-generated / other-language
+    // tracks the library missed. Also try to recover a title if we still lack one.
+    if (!text) {
+      text = await fetchCaptionsDirect(videoID);
+    }
 
     if (!text) {
       return Response.json({ error: NO_CAPTIONS_MSG }, { status: 422 });
@@ -85,7 +133,7 @@ export async function POST(req) {
 
     text = text.slice(0, MAX_TRANSCRIPT_CHARS);
     return Response.json({
-      title: String(title).slice(0, 200),
+      title: String(title || "Video transcript").slice(0, 200),
       text,
       chars: text.length,
     });
