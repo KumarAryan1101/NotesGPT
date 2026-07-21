@@ -8,7 +8,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, RefreshCw, Check, X, Mic, Square, Upload, Youtube } from "lucide-react";
+import { Camera, RefreshCw, Check, X, Mic, Square, Upload } from "lucide-react";
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -398,7 +398,7 @@ function YouTubeCapture({ text, setText }) {
               </>
             ) : (
               <>
-                <Youtube className="h-4 w-4" /> Fetch transcript
+                <span className="text-sm leading-none">▶️</span> Fetch transcript
               </>
             )}
           </button>
